@@ -17,8 +17,9 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          port: 21
           server-dir: ${{ secrets.FTP_DIR }}   # 例: /public_html/manga/  (末尾は必ず /)
-          # protocol: ftps   # サーバーが対応していれば有効化を推奨
+          protocol: ftps   # CoreServerはFTPS(21番)対応。失敗する場合は ftp に変更
           exclude: |
             **/.git*
             **/.git*/**
