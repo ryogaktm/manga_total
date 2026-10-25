@@ -1,0 +1,28 @@
+name: Deploy via FTP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    # リポジトリ変数 FTP_DEPLOY=true を設定するまでは動きません(設定前の失敗通知防止)
+    if: ${{ vars.FTP_DEPLOY == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_DIR }}   # 例: /public_html/manga/  (末尾は必ず /)
+          # protocol: ftps   # サーバーが対応していれば有効化を推奨
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            admin/action/user_csv/**
+            **/*.csv
+            **/*.log

@@ -1,0 +1,5 @@
+# 本番にしかないデータ(履歴CSV・設定・ログ)
+admin/action/user_csv/
+*.csv
+*.log
+.DS_Store
