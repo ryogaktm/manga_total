@@ -1,0 +1,63 @@
+@charset "utf-8";
+/* ===== トップページ（作品一覧）の上下の余白 =====
+   スマホで上下のメニューが画面ギリギリで、タップしにくい問題への対策。
+   ・ノッチ／ホームバー（env(safe-area-inset-*)）を避ける
+   ・それに加えて固定の余白を足す（Android などで inset が 0 の端末向け）
+   余白を変えたい時は、下の4つの数値だけ調整してください。 */
+:root {
+    --top-extra: 10px;      /* 上メニュー：検索欄の上の余白 */
+    --top-extra-bottom: 8px;/* 上メニュー：検索欄の下の余白 */
+    --ft-extra-top: 10px;   /* 下メニュー：アイコンの上の余白 */
+    --ft-extra-bottom: 16px;/* 下メニュー：アイコンの下の余白 */
+
+    --top-pad: calc(env(safe-area-inset-top, 0px) + var(--top-extra));
+    --ft-pad-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--ft-extra-bottom));
+    --ft-h: calc(44px + var(--ft-extra-top) + var(--ft-pad-bottom));
+    --hd-h: calc(51px + var(--top-pad) + var(--top-extra-bottom));
+}
+
+/* ---- 上メニュー（検索欄）----
+   元は「マージンで押し下げて相殺」という構造だったので、余白を足せるように素直な配置に直す */
+.top_main:not(.snd_main) > .main_hd {
+    top: 0;
+    margin-top: 0;
+    height: auto;
+}
+
+.top_main:not(.snd_main) > .main_hd .sch_box {
+    padding-top: var(--top-pad);
+    padding-bottom: var(--top-extra-bottom);
+    box-sizing: border-box;
+}
+
+.top_main:not(.snd_main) > .main_hd .search-area.main_body {
+    margin: 0 auto;
+    height: 51px;
+    overflow: visible;
+}
+
+/* ---- 一覧（タイルが並ぶ部分）：上下メニューの分だけ内側に寄せる ---- */
+.top_main:not(.snd_main) > .main_body {
+    box-sizing: border-box;
+    margin-top: var(--hd-h);
+    margin-bottom: 0;
+    height: calc(100vh - var(--hd-h));
+    height: calc(100dvh - var(--hd-h));
+    padding-bottom: calc(var(--ft-h) + 16px); /* 最後の行が下メニューに隠れない */
+    -webkit-overflow-scrolling: touch;
+}
+
+.top_main:not(.snd_main) .list_body {
+    padding-bottom: 16px;
+}
+
+/* ---- 下メニュー ---- */
+.top_main:not(.snd_main) > .main_ft {
+    padding: var(--ft-extra-top) 0 var(--ft-pad-bottom);
+    box-sizing: border-box;
+}
+
+.top_main:not(.snd_main) > .main_ft .a_group a {
+    min-height: 44px;
+    box-sizing: border-box;
+}

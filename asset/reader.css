@@ -1,0 +1,387 @@
+@charset "utf-8";
+/* ===== 自炊本ビューア（詳細ページ）専用スタイル ===== */
+
+/* スマホの上下の余白（ノッチ・ホームバー・ブラウザのツールバー対策） */
+:root {
+    --rd-safe-top: calc(env(safe-area-inset-top, 0px) + 10px);
+    --rd-safe-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+}
+
+html.rd_html,
+html.rd_html body {
+    background: #000;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+/* ---- ビューア本体 ---- */
+.rd_viewer {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: #000;
+    touch-action: none; /* ブラウザの縦スクロール判定に指の動きを奪われない */
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 1;
+}
+
+.rd_track {
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+    contain: layout style;
+    transition: transform .28s cubic-bezier(.2, .7, .3, 1);
+}
+
+/* 遠い画面は描画対象から外す（全ページ分のレイヤーがメモリを食うのを防ぐ） */
+.rd_page.is-far {
+    display: none;
+}
+
+.rd_page {
+    position: absolute;
+    inset: 0;
+    background: #000;
+}
+
+/* 拡大・移動はこの層に掛ける（画面の並び＝.rd_page とは別にして、めくる動きとぶつからないようにする） */
+.rd_zoom {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: row-reverse; /* 見開き：若いページを右側に */
+    transform-origin: 0 0;
+}
+
+/* 拡大の操作中だけ専用レイヤーにして滑らかにする（終わったら外して、くっきり描き直す） */
+.rd_zoom.is-gesture {
+    will-change: transform;
+}
+
+/* 1ページ分の箱（単ページなら全幅、見開きなら半分ずつ） */
+.rd_half {
+    position: relative;
+    flex: 1 1 100%;
+    min-width: 0;
+    height: 100%;
+    background: center / contain no-repeat;
+}
+
+.rd_page.is-double .rd_half {
+    flex-basis: 50%;
+}
+
+/* 見開きの時は「のど（中央）」側に寄せてすき間をなくす */
+.rd_half.is-right {
+    background-position: left center;
+}
+
+.rd_half.is-left {
+    background-position: right center;
+}
+
+.rd_half img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity .15s linear;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+.rd_half.is-right img {
+    object-position: left center;
+}
+
+.rd_half.is-left img {
+    object-position: right center;
+}
+
+.rd_half.is-loaded img {
+    opacity: 1;
+}
+
+/* 横長の画像を割って表示する枠：画像の右半分／左半分だけを、画面にぴったり収めて見せる
+   --r は「半分にした時の縦横比（横÷縦）」。この枠は画面いっぱいの .rd_half の中央に置く */
+.rd_half.is-split {
+    flex-basis: 100%;
+}
+
+.rd_crop {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+    aspect-ratio: var(--r);
+    width: min(100vw, calc(100dvh * var(--r)));
+    background: no-repeat;
+    background-size: 200% 100%;   /* 仮表示のサムネイルも、2倍に広げて半分だけ見せる */
+}
+
+.rd_crop.is-r {
+    background-position: right top;
+}
+
+.rd_crop.is-l {
+    background-position: left top;
+}
+
+.rd_half .rd_crop img {
+    inset: auto;
+    top: 0;
+    width: 200%;
+    max-width: none;
+    height: 100%;
+    object-fit: fill;
+}
+
+.rd_half .rd_crop.is-r img {
+    right: 0;
+    left: auto;
+}
+
+.rd_half .rd_crop.is-l img {
+    left: 0;
+    right: auto;
+}
+
+/* 読み込み中の小さなスピナー（サムネイルの上に表示） */
+.rd_half.is-loading::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    border: 3px solid rgba(255, 255, 255, .25);
+    border-top-color: rgba(255, 255, 255, .8);
+    border-radius: 50%;
+    animation: rd_spin .8s linear infinite;
+}
+
+.rd_half.is-error::after {
+    content: "画像を読み込めませんでした";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    text-align: center;
+    color: #aaa;
+    font-size: 13px;
+}
+
+@keyframes rd_spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 巻移動などの一時メッセージ */
+.rd_toast {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, .8);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+    z-index: 3000;
+    white-space: nowrap;
+}
+
+.rd_toast.show {
+    opacity: 1;
+}
+
+/* ---- ヘッダー（上）---- */
+.main_slide .main_hd {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: auto;
+    min-height: 50px;
+    padding-top: var(--rd-safe-top);
+    padding-bottom: 6px;
+    box-sizing: border-box;
+    transition: opacity .2s, transform .2s, visibility .2s;
+}
+
+.main_slide .main_hd .vol_title {
+    margin-top: 0;
+    padding: 12px 60px;
+}
+
+/* ---- フッター（下）---- */
+.main_slide .main_ft {
+    height: auto;
+    padding: 10px 12px var(--rd-safe-bottom);
+    box-sizing: border-box;
+    transition: opacity .2s, transform .2s, visibility .2s;
+}
+
+/* 非表示時：高さを0にする代わりに画面外へ逃がし、タップも透過させる */
+.main_slide .main_hd.op0,
+.main_slide .main_ft.op0 {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    height: auto;
+    overflow: visible;
+}
+
+.main_slide .main_hd.op0 {
+    transform: translateY(-100%);
+}
+
+.main_slide .main_ft.op0 {
+    transform: translateY(100%);
+}
+
+/* ページ数表示（フッターの上に浮かせる） */
+.main_slide .slick-counter {
+    top: auto;
+    bottom: 100%;
+    margin: 0 0 10px;
+}
+
+/* ページバー（右→左なので向きを反転） */
+.rd_seek_wrap {
+    padding: 4px 6px 12px;
+}
+
+.rd_seek {
+    width: 100%;
+    direction: rtl;
+    accent-color: #03A9F4;
+    height: 28px;
+    margin: 0;
+    cursor: pointer;
+}
+
+/* 前の巻・次の巻・しおり・巻一覧：押しやすいサイズで横並び */
+.main_slide .main_ft .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+}
+
+.main_slide .main_ft .nav a,
+.main_slide .main_ft .nav .rd_nav_ph {
+    position: static;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    min-height: 44px;
+    min-width: 76px;
+    padding: 0 !important;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.main_slide .main_ft .nav .a_back {
+    justify-content: flex-end;
+}
+
+.main_slide .main_ft .nav svg {
+    position: static;
+    width: 22px;
+    height: auto;
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.main_slide .main_ft .nav .nav_group {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.main_slide .main_ft .nav .nav_group > * {
+    margin: 0 10px;
+    align-items: center;
+    min-height: 44px;
+}
+
+.main_slide .main_ft .nav .vol_title svg {
+    margin: 0 2px 0 0;
+}
+
+/* ページ一覧ポップアップの上下余白 */
+.main_slide .pop_box .pop_box_in {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    box-sizing: border-box;
+}
+
+.main_slide .pop_box .pop_hd .back {
+    top: calc(env(safe-area-inset-top, 0px) + 4px);
+    margin-top: 0;
+}
+
+/* スマホの横幅が狭い時 */
+@media screen and (max-width: 360px) {
+    .main_slide .main_ft .nav a,
+    .main_slide .main_ft .nav .rd_nav_ph {
+        min-width: 64px;
+        font-size: 12px;
+    }
+    .main_slide .main_ft .nav .nav_group > * {
+        margin: 0 6px;
+    }
+}
+
+/* ヘッダー内のボタンもノッチを避けて配置 */
+.main_slide .main_hd .hd_home {
+    top: var(--rd-safe-top);
+    padding: 6px 12px;
+}
+
+.main_slide .main_hd .error_btn {
+    top: var(--rd-safe-top);
+    margin-top: 4px;
+}
+
+/* 見開き時はフッター中央グループの幅制限を外す */
+html.rd_is_spread .nav_group {
+    max-width: none;
+}
+
+/* 「全体表示／半分ずつ」ボタン（横長ページを開いている時だけJSが表示する） */
+.main_slide .main_ft .rd_split_btn {
+    position: absolute;
+    right: 12px;
+    bottom: 100%;
+    margin-bottom: 10px;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, .35);
+    background: #000000a6;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    font-family: inherit;
+    width: auto;
+}
+
+.main_slide .main_ft .rd_split_btn:hover {
+    background: #404040;
+}

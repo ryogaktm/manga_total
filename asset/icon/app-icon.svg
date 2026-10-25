@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <pattern id="tone" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <circle cx="8" cy="8" r="2.6" fill="#ffffff" fill-opacity=".10"/>
+    </pattern>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b56c4"/>
+      <stop offset="1" stop-color="#0a3487"/>
+    </linearGradient>
+  </defs>
+  <!-- 背景（iOSが角を丸めるので四角のまま塗る） -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#tone)"/>
+  <!-- 集中線 -->
+  <g stroke="#fff" stroke-opacity=".18" stroke-width="6" stroke-linecap="round">
+    <line x1="256" y1="70" x2="256" y2="20"/>
+    <line x1="150" y1="98" x2="118" y2="58"/>
+    <line x1="362" y1="98" x2="394" y2="58"/>
+    <line x1="80" y1="160" x2="36" y2="136"/>
+    <line x1="432" y1="160" x2="476" y2="136"/>
+  </g>
+  <!-- 本の影 -->
+  <path d="M60 158 L246 186 L246 446 L60 418 Z M266 186 L452 158 L452 418 L266 446 Z" fill="#000" fill-opacity=".25" transform="translate(0 12)"/>
+  <!-- 左ページ -->
+  <path d="M58 150 Q160 140 250 180 L250 436 Q160 398 58 410 Z" fill="#fbf8f0"/>
+  <!-- 右ページ -->
+  <path d="M454 150 Q352 140 262 180 L262 436 Q352 398 454 410 Z" fill="#ffffff"/>
+  <!-- のど（中央） -->
+  <rect x="248" y="178" width="16" height="260" rx="6" fill="#0a3487" fill-opacity=".35"/>
+  <!-- 左ページのコマ割り -->
+  <g fill="none" stroke="#1d2433" stroke-width="7" stroke-linejoin="round">
+    <path d="M84 178 L226 194 L226 282 L84 272 Z"/>
+    <path d="M84 292 L150 296 L150 392 L84 392 Z"/>
+    <path d="M166 297 L226 302 L226 398 L166 393 Z"/>
+  </g>
+  <!-- 左ページの小さなベタ -->
+  <path d="M96 252 Q130 222 168 246 Q200 262 214 244 L214 270 L96 262 Z" fill="#1d2433"/>
+  <!-- 右ページ：ふきだし -->
+  <path d="M290 214 Q290 186 322 186 L404 186 Q434 186 434 214 L434 262 Q434 290 404 290 L360 290 L334 322 L340 290 L322 290 Q290 290 290 262 Z"
+        fill="#fff" stroke="#1d2433" stroke-width="7" stroke-linejoin="round"/>
+  <!-- ふきだしの中の「！」 -->
+  <rect x="356" y="204" width="16" height="50" rx="8" fill="#e8384f"/>
+  <circle cx="364" cy="272" r="9" fill="#e8384f"/>
+  <!-- 右ページの下のコマ -->
+  <path d="M290 340 L428 334 L428 392 L290 404 Z" fill="none" stroke="#1d2433" stroke-width="7" stroke-linejoin="round"/>
+  <!-- 右→左に読む矢印 -->
+  <path d="M410 366 L326 370" stroke="#e8384f" stroke-width="10" stroke-linecap="round"/>
+  <path d="M342 352 L320 370 L344 386" fill="none" stroke="#e8384f" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
