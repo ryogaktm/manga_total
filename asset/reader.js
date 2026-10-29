@@ -29,7 +29,9 @@
         ZOOM_MAX: 4,             // 最大の拡大率（画面にぴったり収めた状態を1とする）
         DOUBLE_TAP_ZOOM: 2.5,    // ダブルタップした時の拡大率
         DOUBLE_TAP_MS: 300,      // ダブルタップと判定する間隔(ms)
-        EDGE_TURN_PX: 80         // 拡大中、端でさらにこの距離ドラッグするとページをめくる
+        EDGE_TURN_PX: 80,        // 拡大中、端でさらにこの距離ドラッグするとページをめくる
+        LOAD_TIMEOUT: 15000,     // この時間たっても読み込み終わらない画像は中断してやり直す(ms)
+        LOAD_RETRIES: 4          // 自動やり直しの回数(1秒→2秒→4秒…と間隔を延ばす)
     };
 
     var dataEl = document.getElementById('reader-data');
@@ -180,31 +182,68 @@
 
     // ===== 画像の読み込み・解放（画面ごと） =====
     function loadHalf(h, priority) {
+        // 読み込み失敗のまま残っている画面は、表示対象になったときにやり直す
+        if (h._img && h.classList.contains('is-error') && priority === 'high') { unloadHalf(h); }
         if (h._img) { return; }
         var pg = pages[h._p];
         var host = h._crop || h;
         if (pg.thumb) { host.style.backgroundImage = 'url("' + pg.thumb + '")'; } // 小さい画像を先に出しておく
         h.classList.add('is-loading');
-        var img = new Image();
-        img.decoding = 'async';
-        if ('fetchPriority' in img) { img.fetchPriority = priority; }
-        img.alt = '';
-        var done = function () { if (h._img === img) { h.classList.remove('is-loading'); h.classList.add('is-loaded'); } };
-        img.onload = function () {
-            // 先にデコード（絵に変換する重い処理）まで済ませておくと、めくった瞬間に引っかからない
-            if (img.decode) { img.decode().then(done, done); } else { done(); }
-        };
-        img.onerror = function () { h.classList.remove('is-loading'); h.classList.add('is-error'); };
-        img.src = pg.src;
-        host.appendChild(img);
-        h._img = img;
+        var tries = 0;
+
+        function attempt() {
+            var img = new Image();
+            img.decoding = 'async';
+            if ('fetchPriority' in img) { img.fetchPriority = priority; }
+            img.alt = '';
+            var stale = function () { return h._img !== img; };
+            var done = function () {
+                if (stale()) { return; }
+                clearTimeout(h._timer);
+                h.classList.remove('is-loading', 'is-error');
+                h.classList.add('is-loaded');
+            };
+            var fail = function () {
+                if (stale()) { return; }
+                clearTimeout(h._timer);
+                img.onload = img.onerror = null;
+                if (tries < CONFIG.LOAD_RETRIES) {
+                    // 回線が不安定なとき(外出先など)は少し待ってやり直す
+                    var wait = 1000 * Math.pow(2, tries);
+                    tries++;
+                    h._img = null;
+                    if (img.parentNode) { img.parentNode.removeChild(img); }
+                    img.removeAttribute('src');
+                    h._timer = setTimeout(function () { if (!h._img && h._alive) { attempt(); } }, wait);
+                } else {
+                    h.classList.remove('is-loading');
+                    h.classList.add('is-error');
+                }
+            };
+            img.onload = function () {
+                clearTimeout(h._timer);
+                // 先にデコード(絵に変換する重い処理)まで済ませておくと、めくった瞬間に引っかからない
+                if (img.decode) { img.decode().then(done, done); } else { done(); }
+            };
+            img.onerror = fail;
+            // 待っても終わらない読み込み(途中で止まった通信)は打ち切ってやり直す
+            h._timer = setTimeout(fail, CONFIG.LOAD_TIMEOUT);
+            img.src = tries ? pg.src + (pg.src.indexOf('?') < 0 ? '?' : '&') + 'r=' + tries : pg.src;
+            host.appendChild(img);
+            h._img = img;
+        }
+
+        h._alive = true;
+        attempt();
     }
     function unloadHalf(h) {
-        if (!h._img) { return; }
+        h._alive = false;
+        clearTimeout(h._timer);
+        if (!h._img) { h.classList.remove('is-loading', 'is-loaded', 'is-error'); return; }
         var host = h._crop || h;
         h._img.onload = h._img.onerror = null;
         h._img.removeAttribute('src');
-        host.removeChild(h._img);
+        if (h._img.parentNode) { h._img.parentNode.removeChild(h._img); }
         h._img = null;
         host.style.backgroundImage = '';
         h.classList.remove('is-loading', 'is-loaded', 'is-error');
@@ -462,6 +501,7 @@
         saveTimer = setTimeout(saveNow, CONFIG.SAVE_DELAY);
     }
     window.addEventListener('pagehide', saveNow);
+    window.addEventListener('online', function () { updateWindow(); });
 
     function popupOpen() {
         return $$('.pop_box').some(function (el) { return !el.classList.contains('off_box'); });
